@@ -36,7 +36,7 @@ There are two kinds of downloads:
 
 The following are the packages and software I've installed in MATLAB:
 
-##### **SELECT IT** - means I've selected it during the intallation process of MatLab. However, the packages can be also found in the **Home->Add-Ons** menu. I would recommand searching it for all the relevant packages, even those I've added a link to. The link is simply a direct download of the package (which when clicked upon, is followed by the download, and installations of  the package into the MatLab environment).
+ **SELECT IT** - means I've selected it during the intallation process of MatLab. However, the packages can be also found in the **Home->Add-Ons** menu. I would recommand searching it for all the relevant packages, even those I've added a link to. The link is simply a direct download of the package (which when clicked upon, is followed by the download, and installations of  the package into the MatLab environment).
 
  1.   MATLAB®  (required) - the basic program installation.
     
