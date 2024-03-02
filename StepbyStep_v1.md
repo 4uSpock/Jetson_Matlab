@@ -1,12 +1,19 @@
 
-
-> Written with [StackEdit](https://stackedit.io/).
 # Steps to be able to execute the Jetson and Deep Learning libraries in MatLab
 The following are steps you need to take to install and run the the Deep Learning libraries, and prepare for generating and executing on a Jetson hardware piece.
 
 _Sidenote: during the process I've done a fresh new installation of MatLab R2023b, as I did not have it on the tested computer._
 
-## Step 1 - Downloading and Installing the CUDA toolkit.
+## Step 1 - Downloading Microsft Visual Studio
+
+The visual studio environment contains the required compiler for some of the MATLAB packages we'll install.
+
+According to the official MATLAB [site](https://www.mathworks.com/help/gpucoder/gs/install-prerequisites.html) only the 2017, 2019, 2020 versions are supported. 
+Please note that every version of VS (Community, Professional, Enterprise) should be able to provide the necessary compiler.
+Personally, I've used the *_2022 Community Edition_*.
+- In the package selector, install the *Desktop development with C++* package.
+
+## Step 2 - Downloading and Installing the CUDA toolkit.
 - Download the relevant CUDA Toolkit [here](https://developer.nvidia.com/cuda-downloads)
 
 There are two kinds of downloads:
@@ -19,7 +26,7 @@ There are two kinds of downloads:
 ###  TAKE NOTE OF WHERE YOU INSTALL THE CUDA DRIVERS - MAKE SURE YOU SELECT THE DEFAULT LOCATION
 
 
-## Step 2 - Downloading and Installing cuDNN
+## Step 3 - Downloading and Installing cuDNN
 
 - Download the relevant cuDNN library [here](https://developer.nvidia.com/cudnn-downloads?target_os=Windows&target_arch=x86_64&target_version=10). Make sure that the CUDA version you've selected, matches the cuDNN version you download. I would not recommend downloading the latest version. Let it sit for a while. I have v8.9.7.29 downloaded.
 - You may check the compatibility [here](https://docs.nvidia.com/deeplearning/cudnn/reference/support-matrix.html).
@@ -30,7 +37,7 @@ There are two kinds of downloads:
 	2. Remind yourself of where you've installed the CUDA Toolkit. 
 	3. Copy all the files from the extracted folder, and place them in the same directory as your CUDA Toolkit files (_e.g. C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.1_). If a message asking what to do about the double _LICENSE_ files shows up (skip, replace) choose **skip**. 
 
-## Step 3 - Downloading and Installing the relevant Matlab packages
+## Step 4 - Downloading and Installing the relevant Matlab packages
 
 - All but few *must have* packages are stated in the official MATLAB page [here](https://www.mathworks.com/help/gpucoder/gs/install-prerequisites.html). However, not all are necessary, and it would depend on the intended use.
 
@@ -67,7 +74,7 @@ The package names are:
 
 	- Alternatively, install the packages using the links [here](https://www.mathworks.com/matlabcentral/fileexchange/68644-matlab-coder-support-package-for-nvidia-jetson-and-nvidia-drive-platforms) and [here](https://www.mathworks.com/hardware-support/nvidia-jetson.html). Usually, the first one is enough to make it work.
 
-## Step 4 - Checking that Nvidia CUDA and cuDNN software packages are configured correctly.
+## Step 5 - Checking that Nvidia CUDA and cuDNN software packages are configured correctly.
 - To check if all libraries were installed and configured successfully run the following command for the *GPU Coder GUI* to appear.
 
 		gpucoderSetup
@@ -85,177 +92,6 @@ A window opens.
 6. A report window should pop up saying that all's well.
 
 Now we know that our PC can make complicated _Deep-learning_ calculations.
-
-## Step 4.5 - Test run for Deep Learning - with explanation.
-
-### Just the code - explanations follow below the code, in sections.
-```matlab
-clear all
-
-digitDatasetPath = fullfile(matlabroot,'toolbox','nnet','nndemos', ...
-    'nndatasets','DigitDataset');
-imds = imageDatastore(digitDatasetPath, ...
-    'IncludeSubfolders',true,'LabelSource','foldernames');
-
-figure;
-perm = randperm(10000,20);
-for i = 1:20
-    subplot(4,5,i);
-    imshow(imds.Files{perm(i)});
-end
-
-labelCount = countEachLabel(imds)
-
-img = readimage(imds,1);
-size(img)
-
-numTrainFiles = 750;
-[imdsTrain,imdsValidation] = splitEachLabel(imds,numTrainFiles,'randomize');
-
-layers = [
-    imageInputLayer([28 28 1])
-    
-    convolution2dLayer(3,8,'Padding','same')
-    batchNormalizationLayer
-    reluLayer
-    
-    maxPooling2dLayer(2,'Stride',2)
-    
-    convolution2dLayer(3,16,'Padding','same')
-    batchNormalizationLayer
-    reluLayer
-    
-    maxPooling2dLayer(2,'Stride',2)
-    
-    convolution2dLayer(3,32,'Padding','same')
-    batchNormalizationLayer
-    reluLayer
-    
-    fullyConnectedLayer(10)
-    softmaxLayer
-    classificationLayer];
-    
-options = trainingOptions('sgdm', ...
-    'InitialLearnRate',0.01, ...
-    'MaxEpochs',4, ...
-    'Shuffle','every-epoch', ...
-    'ValidationData',imdsValidation, ...
-    'ValidationFrequency',30, ...
-    'Verbose',false, ...
-    'Plots','training-progress');
-
-net = trainNetwork(imdsTrain,layers,options);
-
-YPred = classify(net,imdsValidation);
-YValidation = imdsValidation.Labels;
-
-accuracy = sum(YPred == YValidation)/numel(YValidation)
-```
-### Explanations 
-
-#### Loading and Displaying the Dataset
-
-First, we load the digit dataset and display a random selection of images from it:
-
-```matlab
-clear all
-
-digitDatasetPath = fullfile(matlabroot,'toolbox','nnet','nndemos', ...
-    'nndatasets','DigitDataset');
-imds = imageDatastore(digitDatasetPath, ...
-    'IncludeSubfolders',true,'LabelSource','foldernames');
-
-figure;
-perm = randperm(10000,20);
-for i = 1:20
-    subplot(4,5,i);
-    imshow(imds.Files{perm(i)});
-end
-```
-
-#### Counting Labels in the Dataset
-
-Next, we count the number of images for each label in the dataset:
-
-```matlab
-labelCount = countEachLabel(imds)
-```
-
-#### Preparing the Data
-
-We then read the first image to determine its size and split the dataset into training and validation sets:
-
-```matlab
-img = readimage(imds,1);
-size(img)
-
-numTrainFiles = 750;
-[imdsTrain,imdsValidation] = splitEachLabel(imds,numTrainFiles,'randomize');
-```
-
-#### Defining the Network Architecture
-
-Here, we define the layers of our convolutional neural network (CNN):
-
-```matlab
-layers = [
-    imageInputLayer([28 28 1])
-    
-    convolution2dLayer(3,8,'Padding','same')
-    batchNormalizationLayer
-    reluLayer
-    
-    maxPooling2dLayer(2,'Stride',2)
-    
-    convolution2dLayer(3,16,'Padding','same')
-    batchNormalizationLayer
-    reluLayer
-    
-    maxPooling2dLayer(2,'Stride',2)
-    
-    convolution2dLayer(3,32,'Padding','same')
-    batchNormalizationLayer
-    reluLayer
-    
-    fullyConnectedLayer(10)
-    softmaxLayer
-    classificationLayer];
-```
-
-#### Setting Training Options
-
-We configure the training options:
-
-```matlab
-options = trainingOptions('sgdm', ...
-    'InitialLearnRate',0.01, ...
-    'MaxEpochs',4, ...
-    'Shuffle','every-epoch', ...
-    'ValidationData',imdsValidation, ...
-    'ValidationFrequency',30, ...
-    'Verbose',false, ...
-    'Plots','training-progress');
-```
-
-#### Training the Network
-
-Next, we train the network with the specified layers and options:
-
-```matlab
-net = trainNetwork(imdsTrain,layers,options);
-```
-
-#### Evaluating the Network
-
-Finally, we classify the validation images and calculate the accuracy of the network:
-
-```matlab
-YPred = classify(net,imdsValidation);
-YValidation = imdsValidation.Labels;
-
-accuracy = sum(YPred == YValidation)/numel(YValidation)
-```
-
 
 ## Step 5 - Checking that the Nvidia Jetson configuration software is configured correctly - only with a Jetson device present.
 
